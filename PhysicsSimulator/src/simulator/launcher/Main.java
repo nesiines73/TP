@@ -4,6 +4,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 
+import javax.swing.SwingUtilities;
+
 /*
  * Examples of command-line parameters:
  * 
@@ -36,6 +38,7 @@ import simulator.factories.NoGravityBuilder;
 import simulator.model.Body;
 import simulator.model.GravityLaws;
 import simulator.model.PhysicsSimulator;
+import simulator.view.MainWindow;
 
 public class Main {
 
@@ -50,6 +53,7 @@ public class Main {
 	private static String _outFile = null;
 	private static String _steps = null;
 	private static int _stepsi =150;
+	private static boolean mode = false;
 	private static JSONObject _gravityLawsInfo = null;
 
 	// factories
@@ -81,6 +85,7 @@ public class Main {
 		CommandLineParser parser = new DefaultParser();
 		try {
 			CommandLine line = parser.parse(cmdLineOptions, args);
+			parseModeOption(line);
 			parseHelpOption(line, cmdLineOptions);
 			parseInFileOption(line);
 			parseOutPutFileOption(line);
@@ -108,7 +113,7 @@ public class Main {
 
 	private static Options buildOptions() {
 		Options cmdLineOptions = new Options();
-
+		cmdLineOptions.addOption(Option.builder("m").longOpt("mode").hasArg().desc("modo").build());
 		// help
 		cmdLineOptions.addOption(Option.builder("h").longOpt("help").desc("Print this message.").build());
 
@@ -149,7 +154,15 @@ public class Main {
 
 		return cmdLineOptions;
 	}
-
+	private static void parseModeOption(CommandLine line) throws ParseException {
+			String modo = line.getOptionValue("m");
+			if(modo != null) {
+			if(modo.equalsIgnoreCase("gui")) mode = true;
+			else if(modo.equalsIgnoreCase("batch")) mode = false;
+			else  throw new ParseException("A mode is required");
+			}
+			else throw new ParseException("A mode is required");
+		}
 	private static void parseHelpOption(CommandLine line, Options cmdLineOptions) {
 		if (line.hasOption("h")) {
 			HelpFormatter formatter = new HelpFormatter();
@@ -160,16 +173,13 @@ public class Main {
 
 	private static void parseInFileOption(CommandLine line) throws ParseException {
 		_inFile = line.getOptionValue("i");
-		if (_inFile == null) {
+		if (_inFile == null && !mode) {
 			throw new ParseException("An input file of bodies is required");
 		}
 	}
 
 	private static void parseOutPutFileOption(CommandLine line) throws ParseException {
 		_outFile = line.getOptionValue("o");
-		if (_outFile == null) {
-			throw new ParseException("Output file, where output is written. Default value: the standar output");
-		}
 	}
 	
 	private static void parseStepsOption(CommandLine line) throws ParseException {
@@ -211,27 +221,50 @@ public class Main {
 				throw new ParseException("Invalid gravity laws: " + gl);
 			}
 		} else {
-			_gravityLawsInfo = _gravityLawsFactory.getInfo().get(0);
+			_gravityLawsInfo = _gravityLawsFactory.getInfo().get(1);
 		}
 	}
 
 	private static void startBatchMode() throws Exception {
 		// create and connect components, then start the simulator
 		FileInputStream in = new FileInputStream(_inFile);
-		FileOutputStream out = new FileOutputStream(_outFile);
+		FileOutputStream out = null;
+		if( _outFile != null) out = new FileOutputStream(_outFile);
 		
 		GravityLaws gravityLaws = _gravityLawsFactory.createInstance(_gravityLawsInfo);
 		
 		PhysicsSimulator sim = new PhysicsSimulator(gravityLaws, _dtime); 
-		Controller ctrl = new Controller(sim, _bodyFactory);
+		Controller ctrl = new Controller(sim, _bodyFactory,_gravityLawsFactory);
 		
 		ctrl.loadBodies(in);
-		ctrl.run(_stepsi, out);
+		if(out != null) ctrl.run(_stepsi, out);
+		else ctrl.run(_stepsi, System.out);
+		
+		
 	}
-
+	private static void startGIUMode() throws Exception{
+		
+		GravityLaws gravityLaws = _gravityLawsFactory.createInstance(_gravityLawsInfo);
+		PhysicsSimulator sim = new PhysicsSimulator(gravityLaws, _dtime); 
+		Controller ctrl = new Controller(sim, _bodyFactory,_gravityLawsFactory);
+		if(_inFile != null) {
+			FileInputStream in = new FileInputStream(_inFile);
+			if(mode) ctrl.loadBodies(in);
+		}
+		
+		
+		
+		SwingUtilities.invokeAndWait(new Runnable() {
+			@Override
+			public void run() {
+			new MainWindow(ctrl);
+			}
+			});
+	}
 	private static void start(String[] args) throws Exception {
 		parseArgs(args);
-		startBatchMode();
+		if(!mode)startBatchMode();
+		else startGIUMode();
 	}
 
 	public static void main(String[] args) {

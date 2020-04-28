@@ -7,17 +7,15 @@ import org.json.JSONObject;
 
 public class BuilderBasedFactory<T> implements Factory<T>{
 	List<Builder<T>> _builders;
-	List<JSONObject> _FactoryElements = new ArrayList();
+	List<JSONObject> _FactoryElements = new ArrayList<JSONObject>();
 	public BuilderBasedFactory(List<Builder<T>> builders){
 		this._builders = builders;
-		for(int i = 0; i < _builders.size(); i++) {
-			_FactoryElements.add(_builders.get(i).getBuilderInfo());
-		}		
+		for(Builder<T> _builders : _builders) _FactoryElements.add(_builders.getBuilderInfo());
 	}
+	
 	@Override
 	public T createInstance(JSONObject info)  {
-		for(int i = 0; i < _builders.size(); i++) {
-			Builder<T> b = _builders.get(i);
+		for(Builder<T> b : _builders) {
 			T d  = b.createInstances(info);
 			if(d != null) {
 				return d;

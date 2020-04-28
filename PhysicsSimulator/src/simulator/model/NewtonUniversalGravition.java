@@ -28,5 +28,7 @@ public class NewtonUniversalGravition implements GravityLaws {
 		}
 		}
 	}//poner lo de si la masa es cero lo ponemos a cero directamente
-
+	public String toString() {
+		return "Ley de gravedad universal";
+	}
 }

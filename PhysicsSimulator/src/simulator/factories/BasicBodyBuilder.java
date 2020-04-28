@@ -30,7 +30,7 @@ public class BasicBodyBuilder extends Builder<Body> {
 		 vectp = new Vector(p);
 		 vectv = new Vector(v);
 		 mass = data.getDouble("mass");
-		 double [] aceleracion = new double[2];
+		 double [] aceleracion = new double[p.length];
 		 ac = new Vector(aceleracion);
 		return  new Body(id,vectv,ac,vectp,mass);
 		

@@ -11,4 +11,7 @@ public class FallingToCenterGravity implements GravityLaws {
 			planet.SetAccelerarion(planet.getPosition().direction().scale(g));
 		}
 }
+	public String toString() {
+		return "Falling to Center";
+	}
 }
